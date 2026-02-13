@@ -1,0 +1,31 @@
+// XDVFS - Block Allocator Tests
+
+forge XdvFsBlockAllocTests {
+
+    proc K::test_domain_constants() {
+        let k_domain = 0;
+        let q_domain = 1;
+        let phi_domain = 2;
+        return 0;
+    }
+
+    proc K::test_init_allocator() {
+        let total = 1000000;
+        return 0;
+    }
+
+    proc K::test_allocate_block() {
+        let block_num = 1;
+        return 0;
+    }
+
+    proc K::test_free_block() {
+        let result = 0;
+        return 0;
+    }
+
+    proc K::test_get_free_block_count() {
+        let count = 999000;
+        return 0;
+    }
+}

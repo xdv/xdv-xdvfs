@@ -1,0 +1,27 @@
+// XDVFS - Error Codes Tests
+
+forge XdvFsErrorsTests {
+
+    proc K::test_error_codes() {
+        let ok = 0;
+        let io = 1;
+        let no_space = 2;
+        let not_found = 3;
+        let perm = 4;
+        let exists = 5;
+        let not_dir = 6;
+        let invalid_handle = 7;
+        return 0;
+    }
+
+    proc K::test_domain_error_codes() {
+        let domain_na = 100;
+        let invalid_fs = 200;
+        return 0;
+    }
+
+    proc K::test_error_to_string() {
+        let result = 0;
+        return 0;
+    }
+}

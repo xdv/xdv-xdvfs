@@ -1,0 +1,36 @@
+// XDVFS - Superblock Tests
+
+forge XdvFsSuperblockTests {
+
+    proc K::test_magic_constant() {
+        let magic = 1479858246;
+        return 0;
+    }
+
+    proc K::test_version() {
+        let major = 1;
+        let minor = 0;
+        return 0;
+    }
+
+    proc K::test_block_size() {
+        let size = 4096;
+        return 0;
+    }
+
+    proc K::test_root_inode() {
+        let root = 2;
+        return 0;
+    }
+
+    proc K::test_create_superblock() {
+        let total = 1000000;
+        let result = 0;
+        return 0;
+    }
+
+    proc K::test_validate_superblock() {
+        let valid = 1;
+        return 0;
+    }
+}

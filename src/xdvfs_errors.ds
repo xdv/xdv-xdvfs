@@ -1,0 +1,15 @@
+// XDVFS Error Codes
+
+forge XdvFsErrors {
+    
+    const ERR_OK: UInt32 = 0;
+    const ERR_IO: UInt32 = 1;
+    const ERR_NO_SPACE: UInt32 = 2;
+    const ERR_NOT_FOUND: UInt32 = 3;
+    const ERR_PERMISSION: UInt32 = 4;
+    const ERR_EXISTS: UInt32 = 5;
+    const ERR_NOT_DIRECTORY: UInt32 = 6;
+    const ERR_INVALID_HANDLE: UInt32 = 7;
+    const ERR_DOMAIN_NOT_AVAILABLE: UInt32 = 100;
+    const ERR_INVALID_FILESYSTEM: UInt32 = 200;
+}

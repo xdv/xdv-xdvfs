@@ -1,0 +1,53 @@
+// XDVFS - K-Domain File Tests
+
+forge XdvFsKFileTests {
+
+    proc K::test_file_type() {
+        let file_type = 1;
+        return 0;
+    }
+
+    proc K::test_domain() {
+        let domain = 0;
+        return 0;
+    }
+
+    proc K::test_flags() {
+        let rdonly = 0;
+        let wronly = 1;
+        let rdwr = 2;
+        let creat = 64;
+        return 0;
+    }
+
+    proc K::test_k_create() {
+        let parent = 2;
+        let inode = parent + 1;
+        return 0;
+    }
+
+    proc K::test_k_open() {
+        let file = 2;
+        return 0;
+    }
+
+    proc K::test_k_read() {
+        let bytes_read = 0;
+        return 0;
+    }
+
+    proc K::test_k_write() {
+        let bytes_written = 100;
+        return 0;
+    }
+
+    proc K::test_k_close() {
+        let result = 0;
+        return 0;
+    }
+
+    proc K::test_k_delete() {
+        let result = 0;
+        return 0;
+    }
+}

@@ -1,0 +1,36 @@
+// XDVFS K-Domain File Operations
+
+forge XdvFsKFile {
+    
+    const FILE_TYPE: UInt16 = 1;
+    const DOMAIN: UInt8 = 0;
+    
+    const O_RDONLY: UInt32 = 0;
+    const O_WRONLY: UInt32 = 1;
+    const O_RDWR: UInt32 = 2;
+    const O_CREAT: UInt32 = 64;
+    
+    proc K::k_create(parent_inode: UInt64, name: Str, perms: UInt16) {
+        return parent_inode + 1;
+    }
+    
+    proc K::k_open(path: Str, flags: UInt32) {
+        return 2;
+    }
+    
+    proc K::k_read(file: UInt64, count: UInt32) {
+        return 0;
+    }
+    
+    proc K::k_write(file: UInt64, data_size: UInt32) {
+        return data_size;
+    }
+    
+    proc K::k_close(file: UInt64) {
+        return 0;
+    }
+    
+    proc K::k_delete(parent_inode: UInt64, name: Str) {
+        return 0;
+    }
+}

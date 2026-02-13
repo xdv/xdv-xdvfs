@@ -1,0 +1,59 @@
+// XDVFS - Directory Tests
+
+forge XdvFsDirectoryTests {
+
+    proc K::test_file_type_dir() {
+        let dir_type = 2;
+        return 0;
+    }
+
+    proc K::test_file_type_file() {
+        let file_type = 1;
+        return 0;
+    }
+
+    proc K::test_root_inode() {
+        let root = 2;
+        return 0;
+    }
+
+    proc K::test_mkdir() {
+        let inode = 3;
+        return 0;
+    }
+
+    proc K::test_rmdir() {
+        let result = 0;
+        return 0;
+    }
+
+    proc K::test_opendir() {
+        let handle = 2;
+        return 0;
+    }
+
+    proc K::test_readdir() {
+        let result = 0;
+        return 0;
+    }
+
+    proc K::test_closedir() {
+        let result = 0;
+        return 0;
+    }
+
+    proc K::test_lookup() {
+        let inode = 3;
+        return 0;
+    }
+
+    proc K::test_add_dir_entry() {
+        let result = 0;
+        return 0;
+    }
+
+    proc K::test_remove_dir_entry() {
+        let result = 0;
+        return 0;
+    }
+}

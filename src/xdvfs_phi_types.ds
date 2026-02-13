@@ -1,0 +1,40 @@
+// XDVFS Phi-Domain Types
+
+forge XdvFsPhiTypes {
+    
+    const FILE_TYPE: UInt16 = 9;
+    const DOMAIN: UInt8 = 2;
+    const DOMAIN_NOT_AVAILABLE: UInt32 = 100;
+    
+    proc K::phi_available() {
+        return 0;
+    }
+    
+    proc K::phi_get_error() {
+        return 100;
+    }
+    
+    proc K::phi_compute_admissibility(phase: Float64) {
+        return 0;
+    }
+    
+    proc K::phi_create(parent_inode: UInt64, name: Str) {
+        return 100;
+    }
+    
+    proc K::phi_open(path: Str) {
+        return 100;
+    }
+    
+    proc K::phi_read(file: UInt64) {
+        return 100;
+    }
+    
+    proc K::phi_write(file: UInt64) {
+        return 100;
+    }
+    
+    proc K::phi_close(file: UInt64) {
+        return 100;
+    }
+}

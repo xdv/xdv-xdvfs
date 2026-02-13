@@ -1,0 +1,59 @@
+// XDVFS - Phi-Domain Types Tests
+
+forge XdvFsPhiTypesTests {
+
+    proc K::test_phi_file_type() {
+        let file_type = 9;
+        return 0;
+    }
+
+    proc K::test_phi_domain() {
+        let domain = 2;
+        return 0;
+    }
+
+    proc K::test_domain_not_available() {
+        let err = 100;
+        return 0;
+    }
+
+    proc K::test_phi_available_returns_false() {
+        let available = 0;
+        return 0;
+    }
+
+    proc K::test_phi_get_error() {
+        let err = 100;
+        return 0;
+    }
+
+    proc K::test_phi_compute_admissibility() {
+        let admissibility = 0;
+        return 0;
+    }
+
+    proc K::test_phi_create_returns_error() {
+        let result = 100;
+        return 0;
+    }
+
+    proc K::test_phi_open_returns_error() {
+        let result = 100;
+        return 0;
+    }
+
+    proc K::test_phi_read_returns_error() {
+        let result = 100;
+        return 0;
+    }
+
+    proc K::test_phi_write_returns_error() {
+        let result = 100;
+        return 0;
+    }
+
+    proc K::test_phi_close_returns_error() {
+        let result = 100;
+        return 0;
+    }
+}

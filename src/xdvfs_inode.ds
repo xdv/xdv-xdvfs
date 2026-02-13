@@ -1,0 +1,25 @@
+// XDVFS Inode Management
+
+forge XdvFsInode {
+    
+    const TYPE_REGULAR: UInt16 = 1;
+    const TYPE_DIRECTORY: UInt16 = 2;
+    const TYPE_SYMLINK: UInt16 = 3;
+    const ROOT_INODE: UInt64 = 2;
+    
+    proc K::allocate_inode() {
+        return 2;
+    }
+    
+    proc K::get_inode(inode_num: UInt64) {
+        return inode_num;
+    }
+    
+    proc K::write_inode(inode_num: UInt64) {
+        return 0;
+    }
+    
+    proc K::free_inode(inode_num: UInt64) {
+        return 0;
+    }
+}

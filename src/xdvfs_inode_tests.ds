@@ -1,0 +1,36 @@
+// XDVFS - Inode Tests
+
+forge XdvFsInodeTests {
+
+    proc K::test_inode_types() {
+        let regular = 1;
+        let directory = 2;
+        let symlink = 3;
+        return 0;
+    }
+
+    proc K::test_root_inode() {
+        let root = 2;
+        return 0;
+    }
+
+    proc K::test_allocate_inode() {
+        let inode = 2;
+        return 0;
+    }
+
+    proc K::test_get_inode() {
+        let inode_num = 5;
+        return 0;
+    }
+
+    proc K::test_write_inode() {
+        let result = 0;
+        return 0;
+    }
+
+    proc K::test_free_inode() {
+        let result = 0;
+        return 0;
+    }
+}

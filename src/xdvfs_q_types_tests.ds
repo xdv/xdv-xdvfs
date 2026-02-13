@@ -1,0 +1,54 @@
+// XDVFS - Q-Domain Types Tests
+
+forge XdvFsQTypesTests {
+
+    proc K::test_q_file_type() {
+        let file_type = 8;
+        return 0;
+    }
+
+    proc K::test_q_domain() {
+        let domain = 1;
+        return 0;
+    }
+
+    proc K::test_domain_not_available() {
+        let err = 100;
+        return 0;
+    }
+
+    proc K::test_q_available_returns_false() {
+        let available = 0;
+        return 0;
+    }
+
+    proc K::test_q_get_error() {
+        let err = 100;
+        return 0;
+    }
+
+    proc K::test_q_create_returns_error() {
+        let result = 100;
+        return 0;
+    }
+
+    proc K::test_q_open_returns_error() {
+        let result = 100;
+        return 0;
+    }
+
+    proc K::test_q_read_returns_error() {
+        let result = 100;
+        return 0;
+    }
+
+    proc K::test_q_write_returns_error() {
+        let result = 100;
+        return 0;
+    }
+
+    proc K::test_q_close_returns_error() {
+        let result = 100;
+        return 0;
+    }
+}

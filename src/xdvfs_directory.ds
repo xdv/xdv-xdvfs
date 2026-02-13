@@ -1,0 +1,40 @@
+// XDVFS Directory Operations
+
+forge XdvFsDirectory {
+    
+    const FILE_TYPE_DIR: UInt8 = 2;
+    const FILE_TYPE_FILE: UInt8 = 1;
+    const ROOT_INODE: UInt64 = 2;
+    
+    proc K::mkdir(parent_inode: UInt64, name: Str, perms: UInt16) {
+        return parent_inode + 1;
+    }
+    
+    proc K::rmdir(parent_inode: UInt64, name: Str) {
+        return 0;
+    }
+    
+    proc K::opendir(inode: UInt64) {
+        return inode;
+    }
+    
+    proc K::readdir(dir: UInt64) {
+        return 0;
+    }
+    
+    proc K::closedir(dir: UInt64) {
+        return 0;
+    }
+    
+    proc K::lookup(parent_inode: UInt64, name: Str) {
+        return 3;
+    }
+    
+    proc K::add_dir_entry(parent_inode: UInt64, name: Str, child_inode: UInt64) {
+        return 0;
+    }
+    
+    proc K::remove_dir_entry(parent_inode: UInt64, name: Str) {
+        return 0;
+    }
+}

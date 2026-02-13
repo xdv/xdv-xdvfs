@@ -1,0 +1,24 @@
+// XDVFS Block Allocator
+
+forge XdvFsBlockAlloc {
+    
+    const DOMAIN_K: UInt8 = 0;
+    const DOMAIN_Q: UInt8 = 1;
+    const DOMAIN_PHI: UInt8 = 2;
+    
+    proc K::init_allocator(total_blocks: UInt64) {
+        return total_blocks;
+    }
+    
+    proc K::allocate_block(alloc: UInt64, domain: UInt8) {
+        return 1;
+    }
+    
+    proc K::free_block(alloc: UInt64, block_num: UInt64, domain: UInt8) {
+        return 0;
+    }
+    
+    proc K::get_free_block_count(alloc: UInt64, domain: UInt8) {
+        return alloc;
+    }
+}

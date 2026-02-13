@@ -1,0 +1,38 @@
+// XDVFS Mount Operations
+
+forge XdvFsMount {
+    
+    const MOUNT_FLAGS_RDONLY: UInt32 = 1;
+    const MOUNT_FLAGS_NOEXEC: UInt32 = 2;
+    const MOUNT_FLAGS_NOSUID: UInt32 = 4;
+    const MOUNT_FLAGS_NODEV: UInt32 = 8;
+    const MOUNT_FLAGS_SYNC: UInt32 = 16;
+    
+    proc K::mount(device: Str, mount_point: Str, fs_type: Str, flags: UInt32) {
+        return 0;
+    }
+    
+    proc K::unmount(mount_point: Str) {
+        return 0;
+    }
+    
+    proc K::remount(mount_point: Str, flags: UInt32) {
+        return 0;
+    }
+    
+    proc K::sync_filesystem(handle: UInt64) {
+        return 0;
+    }
+    
+    proc K::check_filesystem(device: Str) {
+        return 1;
+    }
+    
+    proc K::format_filesystem(device: Str) {
+        return 0;
+    }
+    
+    proc K::get_fs_stats(handle: UInt64) {
+        return handle;
+    }
+}

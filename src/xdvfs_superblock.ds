@@ -1,0 +1,18 @@
+// XDVFS Superblock
+
+forge XdvFsSuperblock {
+    
+    const MAGIC: UInt32 = 1479858246;
+    const VERSION_MAJOR: UInt16 = 1;
+    const VERSION_MINOR: UInt16 = 0;
+    const BLOCK_SIZE: UInt32 = 4096;
+    const ROOT_INODE: UInt64 = 2;
+    
+    proc K::create_superblock(total_blocks: UInt64) {
+        return 0;
+    }
+    
+    proc K::validate_superblock(sb: UInt64) {
+        return 1;
+    }
+}
