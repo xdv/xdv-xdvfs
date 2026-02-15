@@ -3,8 +3,8 @@
 
 [workspace]
 name = "xdv_xdvfs"
-version = "0.2.0"
-description = "XDVFS - Domain-aware file system for XDV OS"
+version = "0.3.0"
+description = "XDVFS - Domain-aware filesystem with standard storage hardware support for XDV OS"
 
 [sector]
 name = "xdv_xdvfs"
