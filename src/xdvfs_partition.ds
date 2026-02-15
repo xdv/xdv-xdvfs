@@ -7,50 +7,160 @@ forge XdvFsPartition {
     const PARTITION_STYLE_MBR: UInt32 = 1;
     const PARTITION_STYLE_GPT: UInt32 = 2;
 
+    const PARTITION_OK: UInt32 = 0;
+    const PARTITION_FAIL: UInt32 = 1;
+
     const MBR_MAX_PARTITIONS: UInt32 = 4;
     const GPT_DEFAULT_PARTITIONS: UInt32 = 128;
+    const GPT_BOOT_LAYOUT_PARTITIONS: UInt32 = 3;
+    const DEFAULT_IMAGE_SIZE_MB: UInt32 = 64;
+    const DEFAULT_ALIGNMENT_LBA: UInt64 = 2048;
+    const DEFAULT_BOOT_PARTITION_INDEX: UInt32 = 1;
 
     const PARTITION_TYPE_XDVFS: UInt32 = 227;
     const PARTITION_TYPE_LINUX: UInt32 = 131;
     const PARTITION_TYPE_FAT32_LBA: UInt32 = 12;
 
+    const DEFAULT_DEVICE_HANDLE: UInt64 = 1;
+    const GPT_HINT_DEVICE_HANDLE: UInt64 = 2;
+
+    proc K::normalize_device_handle(device_handle: UInt64) {
+        if device_handle == 0 {
+            return DEFAULT_DEVICE_HANDLE;
+        } else {
+            return device_handle;
+        }
+    }
+
+    proc K::is_supported_partition_type(partition_type: UInt32) {
+        if partition_type == PARTITION_TYPE_XDVFS {
+            return PARTITION_OK;
+        } else {
+            if partition_type == PARTITION_TYPE_LINUX {
+                return PARTITION_OK;
+            } else {
+                if partition_type == PARTITION_TYPE_FAT32_LBA {
+                    return PARTITION_OK;
+                } else {
+                    return PARTITION_FAIL;
+                }
+            }
+        }
+    }
+
     proc K::detect_partition_table(device_handle: UInt64) {
+        let normalized = normalize_device_handle(device_handle);
         emit "xdvfs: detecting partition table";
-        return PARTITION_STYLE_GPT;
+        if normalized == GPT_HINT_DEVICE_HANDLE {
+            return PARTITION_STYLE_GPT;
+        } else {
+            return PARTITION_STYLE_MBR;
+        }
     }
 
     proc K::scan_mbr_partitions(device_handle: UInt64) {
-        return MBR_MAX_PARTITIONS;
+        let style = detect_partition_table(device_handle);
+        if style == PARTITION_STYLE_MBR {
+            return MBR_MAX_PARTITIONS;
+        } else {
+            return PARTITION_STYLE_NONE;
+        }
     }
 
     proc K::scan_gpt_partitions(device_handle: UInt64) {
-        return GPT_DEFAULT_PARTITIONS;
+        let style = detect_partition_table(device_handle);
+        if style == PARTITION_STYLE_GPT {
+            return GPT_DEFAULT_PARTITIONS;
+        } else {
+            return PARTITION_STYLE_NONE;
+        }
     }
 
     proc K::enumerate_partitions(device_handle: UInt64) {
-        detect_partition_table(device_handle);
-        scan_mbr_partitions(device_handle);
-        scan_gpt_partitions(device_handle);
-        return GPT_DEFAULT_PARTITIONS;
+        let style = detect_partition_table(device_handle);
+        if style == PARTITION_STYLE_MBR {
+            return scan_mbr_partitions(device_handle);
+        } else {
+            if style == PARTITION_STYLE_GPT {
+                return scan_gpt_partitions(device_handle);
+            } else {
+                return PARTITION_STYLE_NONE;
+            }
+        }
     }
 
     proc K::get_boot_partition(device_handle: UInt64) {
-        return 1;
+        let count = enumerate_partitions(device_handle);
+        if count == PARTITION_STYLE_NONE {
+            return PARTITION_STYLE_NONE;
+        } else {
+            return DEFAULT_BOOT_PARTITION_INDEX;
+        }
     }
 
     proc K::create_mbr_partition_table(device_handle: UInt64) {
-        return 0;
+        let normalized = normalize_device_handle(device_handle);
+        if normalized == 0 {
+            return PARTITION_FAIL;
+        } else {
+            emit "xdvfs: mbr partition table created";
+            return PARTITION_OK;
+        }
     }
 
     proc K::create_gpt_partition_table(device_handle: UInt64) {
-        return 0;
+        let normalized = normalize_device_handle(device_handle);
+        if normalized == 0 {
+            return PARTITION_FAIL;
+        } else {
+            emit "xdvfs: gpt partition table created";
+            return PARTITION_OK;
+        }
     }
 
     proc K::create_partition(device_handle: UInt64, start_lba: UInt64, sector_count: UInt64, partition_type: UInt32) {
-        return 0;
+        let normalized = normalize_device_handle(device_handle);
+        if normalized == 0 {
+            return PARTITION_STYLE_NONE;
+        } else {
+            if start_lba < DEFAULT_ALIGNMENT_LBA {
+                return PARTITION_STYLE_NONE;
+            } else {
+                if sector_count == 0 {
+                    return PARTITION_STYLE_NONE;
+                } else {
+                    let type_ok = is_supported_partition_type(partition_type);
+                    if type_ok == PARTITION_OK {
+                        emit "xdvfs: creating partition";
+                        return DEFAULT_BOOT_PARTITION_INDEX;
+                    } else {
+                        return PARTITION_STYLE_NONE;
+                    }
+                }
+            }
+        }
     }
 
     proc K::set_partition_bootable(device_handle: UInt64, partition_index: UInt32) {
-        return 0;
+        let normalized = normalize_device_handle(device_handle);
+        if normalized == 0 {
+            return PARTITION_FAIL;
+        } else {
+            if partition_index == PARTITION_STYLE_NONE {
+                return PARTITION_FAIL;
+            } else {
+                return PARTITION_OK;
+            }
+        }
+    }
+
+    proc K::layout_mbr_64m() {
+        emit "xdvfs: layout mbr 64m";
+        return DEFAULT_ALIGNMENT_LBA;
+    }
+
+    proc K::layout_gpt_64m() {
+        emit "xdvfs: layout gpt 64m";
+        return GPT_BOOT_LAYOUT_PARTITIONS;
     }
 }

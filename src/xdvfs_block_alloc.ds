@@ -1,24 +1,113 @@
 // XDVFS Block Allocator
 
 forge XdvFsBlockAlloc {
-    
+
     const DOMAIN_K: UInt8 = 0;
     const DOMAIN_Q: UInt8 = 1;
     const DOMAIN_PHI: UInt8 = 2;
-    
+
+    const ALLOCATOR_INVALID: UInt64 = 0;
+    const BLOCK_INVALID: UInt64 = 0;
+    const BLOCK_FREE_OK: UInt32 = 0;
+    const BLOCK_FREE_FAIL: UInt32 = 1;
+
+    const RESERVED_METADATA_BLOCKS: UInt64 = 1024;
+    const K_DOMAIN_BASE_BLOCK: UInt64 = 2048;
+    const Q_DOMAIN_BASE_BLOCK: UInt64 = 1048576;
+    const PHI_DOMAIN_BASE_BLOCK: UInt64 = 2097152;
+
+    const K_DOMAIN_RESERVE: UInt64 = 256;
+    const Q_DOMAIN_RESERVE: UInt64 = 512;
+    const PHI_DOMAIN_RESERVE: UInt64 = 512;
+
     proc K::init_allocator(total_blocks: UInt64) {
-        return total_blocks;
+        if total_blocks <= RESERVED_METADATA_BLOCKS {
+            return ALLOCATOR_INVALID;
+        } else {
+            return total_blocks - RESERVED_METADATA_BLOCKS;
+        }
     }
-    
-    proc K::allocate_block(alloc: UInt64, domain: UInt8) {
-        return 1;
+
+    proc K::domain_base(domain: UInt8) {
+        if domain == DOMAIN_K {
+            return K_DOMAIN_BASE_BLOCK;
+        } else {
+            if domain == DOMAIN_Q {
+                return Q_DOMAIN_BASE_BLOCK;
+            } else {
+                if domain == DOMAIN_PHI {
+                    return PHI_DOMAIN_BASE_BLOCK;
+                } else {
+                    return BLOCK_INVALID;
+                }
+            }
+        }
     }
-    
-    proc K::free_block(alloc: UInt64, block_num: UInt64, domain: UInt8) {
-        return 0;
-    }
-    
+
     proc K::get_free_block_count(alloc: UInt64, domain: UInt8) {
-        return alloc;
+        if alloc == ALLOCATOR_INVALID {
+            return BLOCK_INVALID;
+        } else {
+            if domain == DOMAIN_K {
+                if alloc <= K_DOMAIN_RESERVE {
+                    return BLOCK_INVALID;
+                } else {
+                    return alloc - K_DOMAIN_RESERVE;
+                }
+            } else {
+                if domain == DOMAIN_Q {
+                    if alloc <= Q_DOMAIN_RESERVE {
+                        return BLOCK_INVALID;
+                    } else {
+                        return alloc - Q_DOMAIN_RESERVE;
+                    }
+                } else {
+                    if domain == DOMAIN_PHI {
+                        if alloc <= PHI_DOMAIN_RESERVE {
+                            return BLOCK_INVALID;
+                        } else {
+                            return alloc - PHI_DOMAIN_RESERVE;
+                        }
+                    } else {
+                        return BLOCK_INVALID;
+                    }
+                }
+            }
+        }
+    }
+
+    proc K::allocate_block(alloc: UInt64, domain: UInt8) {
+        let free_count = get_free_block_count(alloc, domain);
+        if free_count == BLOCK_INVALID {
+            return BLOCK_INVALID;
+        } else {
+            let base = domain_base(domain);
+            if base == BLOCK_INVALID {
+                return BLOCK_INVALID;
+            } else {
+                return base + 1;
+            }
+        }
+    }
+
+    proc K::free_block(alloc: UInt64, block_num: UInt64, domain: UInt8) {
+        if alloc == ALLOCATOR_INVALID {
+            return BLOCK_FREE_FAIL;
+        } else {
+            if block_num == BLOCK_INVALID {
+                return BLOCK_FREE_FAIL;
+            } else {
+                let base = domain_base(domain);
+                if base == BLOCK_INVALID {
+                    return BLOCK_FREE_FAIL;
+                } else {
+                    if block_num < base {
+                        return BLOCK_FREE_FAIL;
+                    } else {
+                        return BLOCK_FREE_OK;
+                    }
+                }
+            }
+        }
     }
 }

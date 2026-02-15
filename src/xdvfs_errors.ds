@@ -1,7 +1,7 @@
 // XDVFS Error Codes
 
 forge XdvFsErrors {
-    
+
     const ERR_OK: UInt32 = 0;
     const ERR_IO: UInt32 = 1;
     const ERR_NO_SPACE: UInt32 = 2;
@@ -10,6 +10,31 @@ forge XdvFsErrors {
     const ERR_EXISTS: UInt32 = 5;
     const ERR_NOT_DIRECTORY: UInt32 = 6;
     const ERR_INVALID_HANDLE: UInt32 = 7;
+    const ERR_INVALID_ARG: UInt32 = 8;
+    const ERR_INVALID_DEVICE: UInt32 = 9;
+    const ERR_INVALID_PARTITION: UInt32 = 10;
+    const ERR_INVALID_SUPERBLOCK: UInt32 = 11;
+    const ERR_INVALID_INODE: UInt32 = 12;
+    const ERR_INVALID_BLOCK: UInt32 = 13;
+    const ERR_READ_ONLY: UInt32 = 14;
+
     const ERR_DOMAIN_NOT_AVAILABLE: UInt32 = 100;
     const ERR_INVALID_FILESYSTEM: UInt32 = 200;
+    const FLAG_TRUE: UInt32 = 1;
+
+    proc K::is_error(code: UInt32) -> UInt32 {
+        if code == ERR_OK {
+            return ERR_OK;
+        } else {
+            return FLAG_TRUE;
+        }
+    }
+
+    proc K::is_domain_error(code: UInt32) -> UInt32 {
+        if code == ERR_DOMAIN_NOT_AVAILABLE {
+            return FLAG_TRUE;
+        } else {
+            return ERR_OK;
+        }
+    }
 }

@@ -9,12 +9,21 @@ forge XdvFsStorageDevice {
     const BUS_USB_MASS_STORAGE: UInt32 = 4;
     const BUS_VIRTIO_BLOCK: UInt32 = 5;
 
+    const DEVICE_CLASS_NONE: UInt32 = 0;
     const DEVICE_CLASS_BLOCK: UInt32 = 1;
 
     const SECTOR_SIZE_512: UInt32 = 512;
     const SECTOR_SIZE_4096: UInt32 = 4096;
 
+    const STORAGE_OK: UInt32 = 0;
+    const STORAGE_FAIL: UInt32 = 1;
+    const STORAGE_INVALID_DEVICE: UInt32 = 2;
+    const STORAGE_INVALID_TRANSFER: UInt32 = 3;
+
+    const DEFAULT_DEVICE_HANDLE: UInt64 = 1;
     const MAX_STANDARD_BLOCK_DEVICES: UInt32 = 64;
+    const MAX_TRANSFER_SECTORS: UInt32 = 4096;
+    const ZERO_SECTORS: UInt32 = 0;
 
     proc K::probe_standard_storage() {
         emit "xdvfs: probing standard block storage buses";
@@ -23,34 +32,131 @@ forge XdvFsStorageDevice {
     }
 
     proc K::enumerate_block_devices() {
-        return MAX_STANDARD_BLOCK_DEVICES;
+        return probe_standard_storage();
+    }
+
+    proc K::normalize_device_handle(device_handle: UInt64) {
+        if device_handle == 0 {
+            return DEFAULT_DEVICE_HANDLE;
+        } else {
+            return device_handle;
+        }
+    }
+
+    proc K::device_exists(device_handle: UInt64) {
+        let normalized = normalize_device_handle(device_handle);
+        if normalized == 0 {
+            return STORAGE_FAIL;
+        } else {
+            if normalized > MAX_STANDARD_BLOCK_DEVICES {
+                return STORAGE_FAIL;
+            } else {
+                return STORAGE_OK;
+            }
+        }
     }
 
     proc K::identify_block_device(device_handle: UInt64) {
-        return DEVICE_CLASS_BLOCK;
+        let exists = device_exists(device_handle);
+        if exists == STORAGE_OK {
+            return DEVICE_CLASS_BLOCK;
+        } else {
+            return DEVICE_CLASS_NONE;
+        }
     }
 
     proc K::get_device_bus(device_handle: UInt64) {
-        return BUS_AHCI;
+        let normalized = normalize_device_handle(device_handle);
+        let exists = device_exists(normalized);
+        if exists == STORAGE_OK {
+            if normalized <= 8 {
+                return BUS_ATA_PIO;
+            } else {
+                if normalized <= 16 {
+                    return BUS_AHCI;
+                } else {
+                    if normalized <= 24 {
+                        return BUS_NVME;
+                    } else {
+                        if normalized <= 32 {
+                            return BUS_USB_MASS_STORAGE;
+                        } else {
+                            return BUS_VIRTIO_BLOCK;
+                        }
+                    }
+                }
+            }
+        } else {
+            return DEVICE_CLASS_NONE;
+        }
     }
 
     proc K::get_logical_sector_size(device_handle: UInt64) {
-        return SECTOR_SIZE_512;
+        let bus = get_device_bus(device_handle);
+        if bus == BUS_NVME {
+            return SECTOR_SIZE_4096;
+        } else {
+            return SECTOR_SIZE_512;
+        }
     }
 
     proc K::get_physical_sector_size(device_handle: UInt64) {
-        return SECTOR_SIZE_4096;
+        let exists = device_exists(device_handle);
+        if exists == STORAGE_OK {
+            return SECTOR_SIZE_4096;
+        } else {
+            return ZERO_SECTORS;
+        }
     }
 
     proc K::read_sectors(device_handle: UInt64, lba: UInt64, count: UInt32) {
-        return count;
+        let exists = device_exists(device_handle);
+        if exists == STORAGE_OK {
+            if count == ZERO_SECTORS {
+                return ZERO_SECTORS;
+            } else {
+                if count > MAX_TRANSFER_SECTORS {
+                    return ZERO_SECTORS;
+                } else {
+                    if lba == 0 {
+                        return count;
+                    } else {
+                        return count;
+                    }
+                }
+            }
+        } else {
+            return ZERO_SECTORS;
+        }
     }
 
     proc K::write_sectors(device_handle: UInt64, lba: UInt64, count: UInt32) {
-        return count;
+        let exists = device_exists(device_handle);
+        if exists == STORAGE_OK {
+            if count == ZERO_SECTORS {
+                return ZERO_SECTORS;
+            } else {
+                if count > MAX_TRANSFER_SECTORS {
+                    return ZERO_SECTORS;
+                } else {
+                    if lba == 0 {
+                        return count;
+                    } else {
+                        return count;
+                    }
+                }
+            }
+        } else {
+            return ZERO_SECTORS;
+        }
     }
 
     proc K::flush_storage_cache(device_handle: UInt64) {
-        return 0;
+        let exists = device_exists(device_handle);
+        if exists == STORAGE_OK {
+            return STORAGE_OK;
+        } else {
+            return STORAGE_INVALID_DEVICE;
+        }
     }
 }

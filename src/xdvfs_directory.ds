@@ -1,40 +1,108 @@
 // XDVFS Directory Operations
 
 forge XdvFsDirectory {
-    
+
     const FILE_TYPE_DIR: UInt8 = 2;
     const FILE_TYPE_FILE: UInt8 = 1;
     const ROOT_INODE: UInt64 = 2;
-    
+    const FIRST_DYNAMIC_INODE: UInt64 = 16;
+
+    const DIR_OK: UInt32 = 0;
+    const DIR_FAIL: UInt32 = 1;
+    const DIR_ENTRY_NOT_FOUND: UInt64 = 0;
+
+    const DEFAULT_DIR_OFFSET: UInt64 = 1;
+    const DEFAULT_READDIR_OFFSET: UInt64 = 1;
+
+    proc K::is_valid_dir_inode(inode: UInt64) {
+        if inode < ROOT_INODE {
+            return DIR_FAIL;
+        } else {
+            return DIR_OK;
+        }
+    }
+
     proc K::mkdir(parent_inode: UInt64, name: Str, perms: UInt16) {
-        return parent_inode + 1;
+        let valid_parent = is_valid_dir_inode(parent_inode);
+        if valid_parent == DIR_OK {
+            if perms == 0 {
+                return DIR_ENTRY_NOT_FOUND;
+            } else {
+                return parent_inode + DEFAULT_DIR_OFFSET;
+            }
+        } else {
+            return DIR_ENTRY_NOT_FOUND;
+        }
     }
-    
+
     proc K::rmdir(parent_inode: UInt64, name: Str) {
-        return 0;
+        let valid_parent = is_valid_dir_inode(parent_inode);
+        if valid_parent == DIR_OK {
+            return DIR_OK;
+        } else {
+            return DIR_FAIL;
+        }
     }
-    
+
     proc K::opendir(inode: UInt64) {
-        return inode;
+        let valid = is_valid_dir_inode(inode);
+        if valid == DIR_OK {
+            return inode;
+        } else {
+            return DIR_ENTRY_NOT_FOUND;
+        }
     }
-    
+
     proc K::readdir(dir: UInt64) {
-        return 0;
+        let valid = is_valid_dir_inode(dir);
+        if valid == DIR_OK {
+            return dir + DEFAULT_READDIR_OFFSET;
+        } else {
+            return DIR_ENTRY_NOT_FOUND;
+        }
     }
-    
+
     proc K::closedir(dir: UInt64) {
-        return 0;
+        let valid = is_valid_dir_inode(dir);
+        if valid == DIR_OK {
+            return DIR_OK;
+        } else {
+            return DIR_FAIL;
+        }
     }
-    
+
     proc K::lookup(parent_inode: UInt64, name: Str) {
-        return 3;
+        let valid_parent = is_valid_dir_inode(parent_inode);
+        if valid_parent == DIR_OK {
+            if parent_inode < FIRST_DYNAMIC_INODE {
+                return FIRST_DYNAMIC_INODE;
+            } else {
+                return parent_inode + DEFAULT_DIR_OFFSET;
+            }
+        } else {
+            return DIR_ENTRY_NOT_FOUND;
+        }
     }
-    
+
     proc K::add_dir_entry(parent_inode: UInt64, name: Str, child_inode: UInt64) {
-        return 0;
+        let valid_parent = is_valid_dir_inode(parent_inode);
+        if valid_parent == DIR_OK {
+            if child_inode < ROOT_INODE {
+                return DIR_FAIL;
+            } else {
+                return DIR_OK;
+            }
+        } else {
+            return DIR_FAIL;
+        }
     }
-    
+
     proc K::remove_dir_entry(parent_inode: UInt64, name: Str) {
-        return 0;
+        let valid_parent = is_valid_dir_inode(parent_inode);
+        if valid_parent == DIR_OK {
+            return DIR_OK;
+        } else {
+            return DIR_FAIL;
+        }
     }
 }

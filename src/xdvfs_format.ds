@@ -9,43 +9,196 @@ forge XdvFsFormat {
 
     const DEFAULT_BLOCK_SIZE: UInt32 = 4096;
     const DEFAULT_INODE_SIZE: UInt32 = 256;
+    const DEFAULT_IMAGE_SIZE_MB: UInt32 = 64;
+
+    const FORMAT_OK: UInt32 = 0;
+    const FORMAT_FAIL: UInt32 = 1;
 
     const SUPERBLOCK_LBA: UInt64 = 8;
+    const KERNEL_IMAGE_LBA: UInt64 = 32;
+    const PRELOAD_PAYLOAD_LBA: UInt64 = 128;
     const INODE_TABLE_LBA: UInt64 = 64;
     const DATA_REGION_LBA: UInt64 = 1024;
 
+    const BOOT_RECORD_LBA: UInt64 = 0;
+    const ONE_SECTOR: UInt32 = 1;
+    const INODE_TABLE_SECTORS: UInt32 = 32;
+    const DATA_REGION_SECTORS: UInt32 = 64;
+    const KERNEL_SLOT_SECTORS: UInt32 = 64;
+    const PRELOAD_SLOT_SECTORS: UInt32 = 128;
+    const INVALID_LBA: UInt64 = 0;
+
+    const MIN_BLOCK_SIZE: UInt32 = 512;
+    const MAX_BLOCK_SIZE: UInt32 = 65536;
+    const MIN_INODE_SIZE: UInt32 = 128;
+    const MAX_INODE_SIZE: UInt32 = 1024;
+
+    proc K::is_valid_format_geometry(block_size: UInt32, inode_size: UInt32) {
+        if block_size < MIN_BLOCK_SIZE {
+            return FORMAT_FAIL;
+        } else {
+            if block_size > MAX_BLOCK_SIZE {
+                return FORMAT_FAIL;
+            } else {
+                if inode_size < MIN_INODE_SIZE {
+                    return FORMAT_FAIL;
+                } else {
+                    if inode_size > MAX_INODE_SIZE {
+                        return FORMAT_FAIL;
+                    } else {
+                        return FORMAT_OK;
+                    }
+                }
+            }
+        }
+    }
+
     proc K::prepare_format_context(device_handle: UInt64, block_size: UInt32, inode_size: UInt32) {
         emit "xdvfs: preparing format context";
-        return 0;
+        if device_handle == 0 {
+            return FORMAT_FAIL;
+        } else {
+            let geometry_ok = is_valid_format_geometry(block_size, inode_size);
+            if geometry_ok == FORMAT_OK {
+                return FORMAT_OK;
+            } else {
+                return FORMAT_FAIL;
+            }
+        }
     }
 
     proc K::write_boot_record(device_handle: UInt64) {
-        return 0;
+        emit "xdvfs: writing boot record";
+        if device_handle == 0 {
+            return FORMAT_FAIL;
+        } else {
+            let written = write_sectors(device_handle, BOOT_RECORD_LBA, ONE_SECTOR);
+            if written == ONE_SECTOR {
+                return FORMAT_OK;
+            } else {
+                return FORMAT_FAIL;
+            }
+        }
     }
 
     proc K::write_superblock(device_handle: UInt64) {
-        return SUPERBLOCK_LBA;
+        if device_handle == 0 {
+            return INVALID_LBA;
+        } else {
+            let written = write_sectors(device_handle, SUPERBLOCK_LBA, ONE_SECTOR);
+            if written == ONE_SECTOR {
+                return SUPERBLOCK_LBA;
+            } else {
+                return INVALID_LBA;
+            }
+        }
     }
 
     proc K::initialize_inode_table(device_handle: UInt64) {
-        return INODE_TABLE_LBA;
+        if device_handle == 0 {
+            return INVALID_LBA;
+        } else {
+            let written = write_sectors(device_handle, INODE_TABLE_LBA, INODE_TABLE_SECTORS);
+            if written == INODE_TABLE_SECTORS {
+                return INODE_TABLE_LBA;
+            } else {
+                return INVALID_LBA;
+            }
+        }
     }
 
     proc K::initialize_data_region(device_handle: UInt64) {
-        return DATA_REGION_LBA;
+        if device_handle == 0 {
+            return INVALID_LBA;
+        } else {
+            let written = write_sectors(device_handle, DATA_REGION_LBA, DATA_REGION_SECTORS);
+            if written == DATA_REGION_SECTORS {
+                return DATA_REGION_LBA;
+            } else {
+                return INVALID_LBA;
+            }
+        }
+    }
+
+    proc K::write_kernel_slot(device_handle: UInt64) {
+        emit "xdvfs: reserving kernel slot";
+        if device_handle == 0 {
+            return INVALID_LBA;
+        } else {
+            let written = write_sectors(device_handle, KERNEL_IMAGE_LBA, KERNEL_SLOT_SECTORS);
+            if written == KERNEL_SLOT_SECTORS {
+                return KERNEL_IMAGE_LBA;
+            } else {
+                return INVALID_LBA;
+            }
+        }
+    }
+
+    proc K::write_preload_payload(device_handle: UInt64) {
+        emit "xdvfs: reserving preload payload slot";
+        if device_handle == 0 {
+            return INVALID_LBA;
+        } else {
+            let written = write_sectors(device_handle, PRELOAD_PAYLOAD_LBA, PRELOAD_SLOT_SECTORS);
+            if written == PRELOAD_SLOT_SECTORS {
+                return PRELOAD_PAYLOAD_LBA;
+            } else {
+                return INVALID_LBA;
+            }
+        }
     }
 
     proc K::format_xdvfs(device_handle: UInt64, block_size: UInt32, inode_size: UInt32) {
-        write_boot_record(device_handle);
-        write_superblock(device_handle);
-        initialize_inode_table(device_handle);
-        initialize_data_region(device_handle);
-        emit "xdvfs: xdvfs metadata initialized";
-        return 0;
+        let prep = prepare_format_context(device_handle, block_size, inode_size);
+        if prep == FORMAT_OK {
+            let boot = write_boot_record(device_handle);
+            if boot == FORMAT_OK {
+                let sb = write_superblock(device_handle);
+                if sb == 0 {
+                    return FORMAT_FAIL;
+                } else {
+                    let inode_table = initialize_inode_table(device_handle);
+                    if inode_table == 0 {
+                        return FORMAT_FAIL;
+                    } else {
+                        let data_region = initialize_data_region(device_handle);
+                        if data_region == 0 {
+                            return FORMAT_FAIL;
+                        } else {
+                            let kernel_slot = write_kernel_slot(device_handle);
+                            if kernel_slot == 0 {
+                                return FORMAT_FAIL;
+                            } else {
+                                let payload_slot = write_preload_payload(device_handle);
+                                if payload_slot == 0 {
+                                    return FORMAT_FAIL;
+                                } else {
+                                    emit "xdvfs: xdvfs metadata initialized";
+                                    return FORMAT_OK;
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                return FORMAT_FAIL;
+            }
+        } else {
+            return FORMAT_FAIL;
+        }
     }
 
     proc K::finalize_format(device_handle: UInt64) {
         emit "xdvfs: finalizing format";
-        return 0;
+        if device_handle == 0 {
+            return FORMAT_FAIL;
+        } else {
+            let flushed = flush_storage_cache(device_handle);
+            if flushed == FORMAT_OK {
+                return FORMAT_OK;
+            } else {
+                return FORMAT_FAIL;
+            }
+        }
     }
 }

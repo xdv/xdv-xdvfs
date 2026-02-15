@@ -1,18 +1,36 @@
 // XDVFS Superblock
 
 forge XdvFsSuperblock {
-    
+
     const MAGIC: UInt32 = 1479858246;
     const VERSION_MAJOR: UInt16 = 1;
     const VERSION_MINOR: UInt16 = 0;
     const BLOCK_SIZE: UInt32 = 4096;
     const ROOT_INODE: UInt64 = 2;
-    
+
+    const SUPERBLOCK_OK: UInt32 = 1;
+    const SUPERBLOCK_INVALID: UInt32 = 0;
+    const MIN_FILESYSTEM_BLOCKS: UInt64 = 2048;
+    const SUPERBLOCK_BASE: UInt64 = 1048576;
+    const MAGIC_U64: UInt64 = 1479858246;
+
     proc K::create_superblock(total_blocks: UInt64) {
-        return 0;
+        if total_blocks < MIN_FILESYSTEM_BLOCKS {
+            return SUPERBLOCK_INVALID;
+        } else {
+            return SUPERBLOCK_BASE + total_blocks + MAGIC_U64;
+        }
     }
-    
+
     proc K::validate_superblock(sb: UInt64) {
-        return 1;
+        if sb <= SUPERBLOCK_BASE {
+            return SUPERBLOCK_INVALID;
+        } else {
+            if sb <= MAGIC_U64 {
+                return SUPERBLOCK_INVALID;
+            } else {
+                return SUPERBLOCK_OK;
+            }
+        }
     }
 }

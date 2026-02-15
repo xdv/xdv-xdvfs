@@ -14,59 +14,191 @@ forge XdvFsMount {
 
     const PARTITION_STYLE_MBR: UInt32 = 1;
     const PARTITION_STYLE_GPT: UInt32 = 2;
+    const SUPERBLOCK_OK: UInt32 = 1;
 
     const DEFAULT_BLOCK_SIZE: UInt32 = 4096;
     const DEFAULT_INODE_SIZE: UInt32 = 256;
+    const DEFAULT_DEVICE_HANDLE: UInt64 = 1;
+    const DEFAULT_TOTAL_BLOCKS: UInt64 = 16384;
+    const INVALID_RESULT: UInt32 = 0;
+
+    const MOUNT_OK: UInt32 = 0;
+    const MOUNT_FAIL: UInt32 = 1;
+
+    proc K::is_supported_mount_flags(flags: UInt32) {
+        if flags == 0 {
+            return MOUNT_OK;
+        } else {
+            if flags == MOUNT_FLAGS_RDONLY {
+                return MOUNT_OK;
+            } else {
+                if flags == MOUNT_FLAGS_NOEXEC {
+                    return MOUNT_OK;
+                } else {
+                    if flags == MOUNT_FLAGS_NOSUID {
+                        return MOUNT_OK;
+                    } else {
+                        if flags == MOUNT_FLAGS_NODEV {
+                            return MOUNT_OK;
+                        } else {
+                            if flags == MOUNT_FLAGS_SYNC {
+                                return MOUNT_OK;
+                            } else {
+                                if flags == MOUNT_FLAGS_RDONLY + MOUNT_FLAGS_NOEXEC {
+                                    return MOUNT_OK;
+                                } else {
+                                    if flags == MOUNT_FLAGS_RDONLY + MOUNT_FLAGS_NODEV {
+                                        return MOUNT_OK;
+                                    } else {
+                                        return MOUNT_FAIL;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     proc K::mount(device: Str, mount_point: Str, fs_type: Str, flags: UInt32) {
         emit "xdvfs: mount request accepted";
-        probe_standard_storage();
-        detect_partition_table(0);
-        validate_superblock(0);
-        emit "xdvfs: filesystem mounted";
-        return 0;
+
+        let flags_ok = is_supported_mount_flags(flags);
+        if flags_ok == MOUNT_OK {
+            let probed = probe_standard_storage();
+            if probed == INVALID_RESULT {
+                return MOUNT_FAIL;
+            } else {
+                let partition_style = detect_partition_table(DEFAULT_DEVICE_HANDLE);
+                if partition_style == INVALID_RESULT {
+                    return MOUNT_FAIL;
+                } else {
+                    let partition_count = enumerate_partitions(DEFAULT_DEVICE_HANDLE);
+                    if partition_count == INVALID_RESULT {
+                        return MOUNT_FAIL;
+                    } else {
+                        let boot_partition = get_boot_partition(DEFAULT_DEVICE_HANDLE);
+                        if boot_partition == INVALID_RESULT {
+                            return MOUNT_FAIL;
+                        } else {
+                            let sb = create_superblock(DEFAULT_TOTAL_BLOCKS);
+                            if sb == INVALID_RESULT {
+                                return MOUNT_FAIL;
+                            } else {
+                                let valid = validate_superblock(sb);
+                                if valid == SUPERBLOCK_OK {
+                                    emit "xdvfs: filesystem mounted";
+                                    return MOUNT_OK;
+                                } else {
+                                    return MOUNT_FAIL;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            return MOUNT_FAIL;
+        }
     }
 
     proc K::unmount(mount_point: Str) {
         emit "xdvfs: unmount request accepted";
-        sync_filesystem(0);
-        emit "xdvfs: filesystem unmounted";
-        return 0;
+        let sync_status = sync_filesystem(DEFAULT_DEVICE_HANDLE);
+        if sync_status == MOUNT_OK {
+            emit "xdvfs: filesystem unmounted";
+            return MOUNT_OK;
+        } else {
+            return MOUNT_FAIL;
+        }
     }
 
     proc K::remount(mount_point: Str, flags: UInt32) {
         emit "xdvfs: remount request accepted";
-        sync_filesystem(0);
-        emit "xdvfs: remount complete";
-        return 0;
+        let flags_ok = is_supported_mount_flags(flags);
+        if flags_ok == MOUNT_OK {
+            let sync_status = sync_filesystem(DEFAULT_DEVICE_HANDLE);
+            if sync_status == MOUNT_OK {
+                emit "xdvfs: remount complete";
+                return MOUNT_OK;
+            } else {
+                return MOUNT_FAIL;
+            }
+        } else {
+            return MOUNT_FAIL;
+        }
     }
 
     proc K::sync_filesystem(handle: UInt64) {
-        flush_storage_cache(0);
-        return 0;
+        let normalized = normalize_device_handle(handle);
+        let flushed = flush_storage_cache(normalized);
+        if flushed == MOUNT_OK {
+            return MOUNT_OK;
+        } else {
+            return MOUNT_FAIL;
+        }
     }
 
     proc K::check_filesystem(device: Str) {
         emit "xdvfs: fsck preflight";
-        probe_standard_storage();
-        detect_partition_table(0);
-        validate_superblock(0);
-        emit "xdvfs: fsck clean";
-        return 0;
+        let probed = probe_standard_storage();
+        if probed == INVALID_RESULT {
+            return MOUNT_FAIL;
+        } else {
+            let partition_style = detect_partition_table(DEFAULT_DEVICE_HANDLE);
+            if partition_style == INVALID_RESULT {
+                return MOUNT_FAIL;
+            } else {
+                let sb = create_superblock(DEFAULT_TOTAL_BLOCKS);
+                let valid = validate_superblock(sb);
+                if valid == SUPERBLOCK_OK {
+                    emit "xdvfs: fsck clean";
+                    return MOUNT_OK;
+                } else {
+                    return MOUNT_FAIL;
+                }
+            }
+        }
     }
 
     proc K::format_filesystem(device: Str) {
         emit "xdvfs: format request accepted";
-        probe_standard_storage();
-        detect_partition_table(0);
-        prepare_format_context(0, DEFAULT_BLOCK_SIZE, DEFAULT_INODE_SIZE);
-        format_xdvfs(0, DEFAULT_BLOCK_SIZE, DEFAULT_INODE_SIZE);
-        finalize_format(0);
-        emit "xdvfs: format complete";
-        return 0;
+        let probed = probe_standard_storage();
+        if probed == INVALID_RESULT {
+            return MOUNT_FAIL;
+        } else {
+            let partition_style = detect_partition_table(DEFAULT_DEVICE_HANDLE);
+            if partition_style == INVALID_RESULT {
+                return MOUNT_FAIL;
+            } else {
+                let prep = prepare_format_context(DEFAULT_DEVICE_HANDLE, DEFAULT_BLOCK_SIZE, DEFAULT_INODE_SIZE);
+                if prep == MOUNT_OK {
+                    let formatted = format_xdvfs(DEFAULT_DEVICE_HANDLE, DEFAULT_BLOCK_SIZE, DEFAULT_INODE_SIZE);
+                    if formatted == MOUNT_OK {
+                        let finalized = finalize_format(DEFAULT_DEVICE_HANDLE);
+                        if finalized == MOUNT_OK {
+                            emit "xdvfs: format complete";
+                            return MOUNT_OK;
+                        } else {
+                            return MOUNT_FAIL;
+                        }
+                    } else {
+                        return MOUNT_FAIL;
+                    }
+                } else {
+                    return MOUNT_FAIL;
+                }
+            }
+        }
     }
 
     proc K::get_fs_stats(handle: UInt64) {
-        return handle;
+        let normalized = normalize_device_handle(handle);
+        if normalized == INVALID_RESULT {
+            return INVALID_RESULT;
+        } else {
+            return DEFAULT_TOTAL_BLOCKS;
+        }
     }
 }

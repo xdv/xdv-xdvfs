@@ -1,25 +1,67 @@
 // XDVFS Inode Management
 
 forge XdvFsInode {
-    
+
     const TYPE_REGULAR: UInt16 = 1;
     const TYPE_DIRECTORY: UInt16 = 2;
     const TYPE_SYMLINK: UInt16 = 3;
+
     const ROOT_INODE: UInt64 = 2;
-    
+    const FIRST_DYNAMIC_INODE: UInt64 = 16;
+    const MAX_INODE_NUMBER: UInt64 = 1048576;
+
+    const INODE_OK: UInt32 = 0;
+    const INODE_FAIL: UInt32 = 1;
+    const INODE_INVALID: UInt64 = 0;
+
+    proc K::is_valid_inode(inode_num: UInt64) {
+        if inode_num < ROOT_INODE {
+            return INODE_FAIL;
+        } else {
+            if inode_num > MAX_INODE_NUMBER {
+                return INODE_FAIL;
+            } else {
+                return INODE_OK;
+            }
+        }
+    }
+
     proc K::allocate_inode() {
-        return 2;
+        return FIRST_DYNAMIC_INODE;
     }
-    
+
     proc K::get_inode(inode_num: UInt64) {
-        return inode_num;
+        let valid = is_valid_inode(inode_num);
+        if valid == INODE_OK {
+            return inode_num;
+        } else {
+            return INODE_INVALID;
+        }
     }
-    
+
     proc K::write_inode(inode_num: UInt64) {
-        return 0;
+        let valid = is_valid_inode(inode_num);
+        if valid == INODE_OK {
+            return INODE_OK;
+        } else {
+            return INODE_FAIL;
+        }
     }
-    
+
     proc K::free_inode(inode_num: UInt64) {
-        return 0;
+        let valid = is_valid_inode(inode_num);
+        if valid == INODE_OK {
+            if inode_num == ROOT_INODE {
+                return INODE_FAIL;
+            } else {
+                if inode_num < FIRST_DYNAMIC_INODE {
+                    return INODE_FAIL;
+                } else {
+                    return INODE_OK;
+                }
+            }
+        } else {
+            return INODE_FAIL;
+        }
     }
 }

@@ -1,40 +1,66 @@
 // XDVFS Phi-Domain Types
 
 forge XdvFsPhiTypes {
-    
+
     const FILE_TYPE: UInt16 = 9;
     const DOMAIN: UInt8 = 2;
     const DOMAIN_NOT_AVAILABLE: UInt32 = 100;
-    
+
+    const PHI_AVAILABLE_FALSE: UInt32 = 0;
+    const PHI_HANDLE_INVALID: UInt32 = 0;
+    const PHI_INVALID_ARG: UInt32 = 1;
+    const PHI_ADMISSIBLE: UInt32 = 1;
+    const PHI_NOT_ADMISSIBLE: UInt32 = 0;
+
     proc K::phi_available() {
-        return 0;
+        return PHI_AVAILABLE_FALSE;
     }
-    
+
     proc K::phi_get_error() {
-        return 100;
+        return DOMAIN_NOT_AVAILABLE;
     }
-    
+
     proc K::phi_compute_admissibility(phase: Float64) {
-        return 0;
+        if phase == 0 {
+            return PHI_ADMISSIBLE;
+        } else {
+            return PHI_ADMISSIBLE;
+        }
     }
-    
+
     proc K::phi_create(parent_inode: UInt64, name: Str) {
-        return 100;
+        if parent_inode == 0 {
+            return PHI_INVALID_ARG;
+        } else {
+            return DOMAIN_NOT_AVAILABLE;
+        }
     }
-    
+
     proc K::phi_open(path: Str) {
-        return 100;
+        return DOMAIN_NOT_AVAILABLE;
     }
-    
+
     proc K::phi_read(file: UInt64) {
-        return 100;
+        if file == PHI_HANDLE_INVALID {
+            return PHI_INVALID_ARG;
+        } else {
+            return DOMAIN_NOT_AVAILABLE;
+        }
     }
-    
+
     proc K::phi_write(file: UInt64) {
-        return 100;
+        if file == PHI_HANDLE_INVALID {
+            return PHI_INVALID_ARG;
+        } else {
+            return DOMAIN_NOT_AVAILABLE;
+        }
     }
-    
+
     proc K::phi_close(file: UInt64) {
-        return 100;
+        if file == PHI_HANDLE_INVALID {
+            return PHI_INVALID_ARG;
+        } else {
+            return DOMAIN_NOT_AVAILABLE;
+        }
     }
 }

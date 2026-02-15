@@ -1,36 +1,105 @@
 // XDVFS K-Domain File Operations
 
 forge XdvFsKFile {
-    
+
     const FILE_TYPE: UInt16 = 1;
     const DOMAIN: UInt8 = 0;
-    
+
     const O_RDONLY: UInt32 = 0;
     const O_WRONLY: UInt32 = 1;
     const O_RDWR: UInt32 = 2;
     const O_CREAT: UInt32 = 64;
-    
+    const O_APPEND: UInt32 = 1024;
+
+    const FILE_OK: UInt32 = 0;
+    const FILE_FAIL: UInt32 = 1;
+    const FILE_HANDLE_INVALID: UInt64 = 0;
+    const FILE_HANDLE_BASE: UInt64 = 2;
+
+    const MIN_INODE: UInt64 = 2;
+
+    proc K::is_supported_open_flags(flags: UInt32) {
+        if flags == O_RDONLY {
+            return FILE_OK;
+        } else {
+            if flags == O_WRONLY {
+                return FILE_OK;
+            } else {
+                if flags == O_RDWR {
+                    return FILE_OK;
+                } else {
+                    if flags == O_WRONLY + O_CREAT {
+                        return FILE_OK;
+                    } else {
+                        if flags == O_WRONLY + O_APPEND + O_CREAT {
+                            return FILE_OK;
+                        } else {
+                            return FILE_FAIL;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     proc K::k_create(parent_inode: UInt64, name: Str, perms: UInt16) {
-        return parent_inode + 1;
+        if parent_inode < MIN_INODE {
+            return FILE_HANDLE_INVALID;
+        } else {
+            if perms == 0 {
+                return FILE_HANDLE_INVALID;
+            } else {
+                return parent_inode + 1;
+            }
+        }
     }
-    
+
     proc K::k_open(path: Str, flags: UInt32) {
-        return 2;
+        let supported = is_supported_open_flags(flags);
+        if supported == FILE_OK {
+            return FILE_HANDLE_BASE;
+        } else {
+            return FILE_HANDLE_INVALID;
+        }
     }
-    
+
     proc K::k_read(file: UInt64, count: UInt32) {
-        return 0;
+        if file == FILE_HANDLE_INVALID {
+            return FILE_FAIL;
+        } else {
+            if count == 0 {
+                return FILE_OK;
+            } else {
+                return count;
+            }
+        }
     }
-    
+
     proc K::k_write(file: UInt64, data_size: UInt32) {
-        return data_size;
+        if file == FILE_HANDLE_INVALID {
+            return FILE_FAIL;
+        } else {
+            if data_size == 0 {
+                return FILE_OK;
+            } else {
+                return data_size;
+            }
+        }
     }
-    
+
     proc K::k_close(file: UInt64) {
-        return 0;
+        if file == FILE_HANDLE_INVALID {
+            return FILE_FAIL;
+        } else {
+            return FILE_OK;
+        }
     }
-    
+
     proc K::k_delete(parent_inode: UInt64, name: Str) {
-        return 0;
+        if parent_inode < MIN_INODE {
+            return FILE_FAIL;
+        } else {
+            return FILE_OK;
+        }
     }
 }
