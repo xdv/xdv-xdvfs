@@ -13,8 +13,9 @@ path = "src"
 [dependencies]
 # Core DPL libraries
 dustlib = { path = "../dustlib" }
-dustlib_k = { path = "../dustlib_k" }
+dustlib_k = { path = "../dustlib-k" }
 
 [target.x64-pc-none]
 linker = "ld"
 linker_flags = ["-nostdlib", "-static"]
+
