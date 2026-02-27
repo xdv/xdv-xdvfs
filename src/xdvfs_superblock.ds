@@ -1,4 +1,7 @@
-// XDVFS Superblock
+// File: xdvfs_superblock.ds - This file is part of XDV
+// Copyright (c) 2026 Dust LLC, and Contributors
+// Description:
+//   XDVFS Superblock
 
 forge XdvFsSuperblock {
 

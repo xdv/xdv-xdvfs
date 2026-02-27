@@ -1,4 +1,7 @@
-// XDVFS Mount + Hardware Integration Operations
+// File: xdvfs_mount.ds - This file is part of XDV
+// Copyright (c) 2026 Dust LLC, and Contributors
+// Description:
+//   XDVFS Mount + Hardware Integration Operations
 
 forge XdvFsMount {
 

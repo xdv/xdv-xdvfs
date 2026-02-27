@@ -1,4 +1,7 @@
-// XDVFS Directory Operations
+// File: xdvfs_directory.ds - This file is part of XDV
+// Copyright (c) 2026 Dust LLC, and Contributors
+// Description:
+//   XDVFS Directory Operations
 
 forge XdvFsDirectory {
 

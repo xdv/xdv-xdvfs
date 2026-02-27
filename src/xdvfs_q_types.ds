@@ -1,4 +1,7 @@
-// XDVFS Q-Domain Types
+// File: xdvfs_q_types.ds - This file is part of XDV
+// Copyright (c) 2026 Dust LLC, and Contributors
+// Description:
+//   XDVFS Q-Domain Types
 
 forge XdvFsQTypes {
 

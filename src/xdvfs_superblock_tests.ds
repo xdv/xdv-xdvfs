@@ -1,4 +1,7 @@
-// XDVFS - Superblock Tests
+// File: xdvfs_superblock_tests.ds - This file is part of XDV
+// Copyright (c) 2026 Dust LLC, and Contributors
+// Description:
+//   XDVFS - Superblock Tests
 
 forge XdvFsSuperblockTests {
 

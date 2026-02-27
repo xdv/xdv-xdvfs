@@ -1,4 +1,7 @@
-// XDVFS - Q-Domain Types Tests
+// File: xdvfs_q_types_tests.ds - This file is part of XDV
+// Copyright (c) 2026 Dust LLC, and Contributors
+// Description:
+//   XDVFS - Q-Domain Types Tests
 
 forge XdvFsQTypesTests {
 

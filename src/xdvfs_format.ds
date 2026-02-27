@@ -1,5 +1,8 @@
-// XDVFS Formatter Core
-// Pure DPL formatting pipeline for xdvfs on standard block hardware.
+// File: xdvfs_format.ds - This file is part of XDV
+// Copyright (c) 2026 Dust LLC, and Contributors
+// Description:
+//   XDVFS Formatter Core
+//   Pure DPL formatting pipeline for xdvfs on standard block hardware.
 
 forge XdvFsFormat {
 

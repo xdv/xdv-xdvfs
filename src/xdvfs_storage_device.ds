@@ -1,5 +1,8 @@
-// XDVFS Standard Storage Hardware Layer
-// Pure DPL abstractions for ATA/AHCI/NVMe/USB/VirtIO block storage.
+// File: xdvfs_storage_device.ds - This file is part of XDV
+// Copyright (c) 2026 Dust LLC, and Contributors
+// Description:
+//   XDVFS Standard Storage Hardware Layer
+//   Pure DPL abstractions for ATA/AHCI/NVMe/USB/VirtIO block storage.
 
 forge XdvFsStorageDevice {
 

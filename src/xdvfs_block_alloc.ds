@@ -1,4 +1,7 @@
-// XDVFS Block Allocator
+// File: xdvfs_block_alloc.ds - This file is part of XDV
+// Copyright (c) 2026 Dust LLC, and Contributors
+// Description:
+//   XDVFS Block Allocator
 
 forge XdvFsBlockAlloc {
 

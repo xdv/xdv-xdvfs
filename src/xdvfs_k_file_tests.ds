@@ -1,4 +1,7 @@
-// XDVFS - K-Domain File Tests
+// File: xdvfs_k_file_tests.ds - This file is part of XDV
+// Copyright (c) 2026 Dust LLC, and Contributors
+// Description:
+//   XDVFS - K-Domain File Tests
 
 forge XdvFsKFileTests {
 
