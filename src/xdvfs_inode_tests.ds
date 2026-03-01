@@ -5,35 +5,92 @@
 
 forge XdvFsInodeTests {
 
+    const TEST_PASS: UInt32 = 0;
+    const TEST_FAIL: UInt32 = 1;
+
+    const INODE_OK: UInt32 = 0;
+    const INODE_FAIL: UInt32 = 1;
+
+    proc K::expect_u32(actual: UInt32, expected: UInt32) {
+        if actual == expected {
+            return TEST_PASS;
+        } else {
+            return TEST_FAIL;
+        }
+    }
+
+    proc K::expect_u64(actual: UInt64, expected: UInt64) {
+        if actual == expected {
+            return TEST_PASS;
+        } else {
+            return TEST_FAIL;
+        }
+    }
+
+    proc K::combine(lhs: UInt32, rhs: UInt32) {
+        if lhs == TEST_PASS {
+            return rhs;
+        } else {
+            return TEST_FAIL;
+        }
+    }
+
     proc K::test_inode_types() {
-        let regular = 1;
-        let directory = 2;
-        let symlink = 3;
-        return 0;
+        let t1 = expect_u32(is_valid_inode_type(1), INODE_OK);
+        let t2 = expect_u32(is_valid_inode_type(2), INODE_OK);
+        let t3 = expect_u32(is_valid_inode_type(3), INODE_OK);
+        let t4 = expect_u32(is_valid_inode_type(99), INODE_FAIL);
+
+        let u1 = combine(t1, t2);
+        let u2 = combine(u1, t3);
+        return combine(u2, t4);
     }
 
-    proc K::test_root_inode() {
-        let root = 2;
-        return 0;
+    proc K::test_allocate_inode_flow() {
+        let first = allocate_inode();
+        let next = allocate_inode_after(first);
+
+        let t1 = expect_u64(first, 16);
+        let t2 = expect_u64(next, 17);
+        return combine(t1, t2);
     }
 
-    proc K::test_allocate_inode() {
-        let inode = 2;
-        return 0;
+    proc K::test_inode_record_pack() {
+        let rec = inode_pack_record(16, 1, 420, 2304, 4096);
+        if rec == 0 {
+            return TEST_FAIL;
+        } else {
+            return TEST_PASS;
+        }
     }
 
-    proc K::test_get_inode() {
-        let inode_num = 5;
-        return 0;
+    proc K::test_required_path_inodes_and_free_guards() {
+        let contract_ok = validate_required_path_inodes(3, 4, 5);
+        let contract_bad = validate_required_path_inodes(3, 4, 6);
+
+        let free_root = free_inode(2);
+        let free_console = free_inode(3);
+        let free_kernel = free_inode(4);
+        let free_dynamic = free_inode(16);
+
+        let t1 = expect_u32(contract_ok, INODE_OK);
+        let t2 = expect_u32(contract_bad, INODE_FAIL);
+        let t3 = expect_u32(free_root, INODE_FAIL);
+        let t4 = expect_u32(free_console, INODE_FAIL);
+        let t5 = expect_u32(free_kernel, INODE_FAIL);
+        let t6 = expect_u32(free_dynamic, INODE_OK);
+
+        let u1 = combine(t1, t2);
+        let u2 = combine(u1, t3);
+        let u3 = combine(u2, t4);
+        let u4 = combine(u3, t5);
+        return combine(u4, t6);
     }
 
-    proc K::test_write_inode() {
-        let result = 0;
-        return 0;
-    }
-
-    proc K::test_free_inode() {
-        let result = 0;
-        return 0;
+    proc K::run_all_tests() {
+        let t1 = test_inode_types();
+        let t2 = combine(t1, test_allocate_inode_flow());
+        let t3 = combine(t2, test_inode_record_pack());
+        return combine(t3, test_required_path_inodes_and_free_guards());
     }
 }

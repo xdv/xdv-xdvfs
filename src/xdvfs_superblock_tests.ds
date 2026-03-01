@@ -5,35 +5,86 @@
 
 forge XdvFsSuperblockTests {
 
-    proc K::test_magic_constant() {
-        let magic = 1479858246;
-        return 0;
+    const TEST_PASS: UInt32 = 0;
+    const TEST_FAIL: UInt32 = 1;
+
+    const MAGIC: UInt32 = 1479858246;
+    const VERSION_MAJOR: UInt16 = 1;
+    const VERSION_MINOR: UInt16 = 0;
+    const BLOCK_SIZE: UInt32 = 4096;
+    const ROOT_INODE: UInt64 = 2;
+
+    const SUPERBLOCK_OK: UInt32 = 1;
+
+    proc K::expect_u32(actual: UInt32, expected: UInt32) {
+        if actual == expected {
+            return TEST_PASS;
+        } else {
+            return TEST_FAIL;
+        }
     }
 
-    proc K::test_version() {
-        let major = 1;
-        let minor = 0;
-        return 0;
+    proc K::expect_u64(actual: UInt64, expected: UInt64) {
+        if actual == expected {
+            return TEST_PASS;
+        } else {
+            return TEST_FAIL;
+        }
     }
 
-    proc K::test_block_size() {
-        let size = 4096;
-        return 0;
+    proc K::combine(lhs: UInt32, rhs: UInt32) {
+        if lhs == TEST_PASS {
+            return rhs;
+        } else {
+            return TEST_FAIL;
+        }
     }
 
-    proc K::test_root_inode() {
-        let root = 2;
-        return 0;
+    proc K::test_constants() {
+        let t1 = expect_u32(MAGIC, 1479858246);
+        let t2 = expect_u32(VERSION_MAJOR, 1);
+        let t3 = expect_u32(VERSION_MINOR, 0);
+        let t4 = expect_u32(BLOCK_SIZE, 4096);
+        let t5 = expect_u64(ROOT_INODE, 2);
+
+        let u1 = combine(t1, t2);
+        let u2 = combine(u1, t3);
+        let u3 = combine(u2, t4);
+        return combine(u3, t5);
     }
 
-    proc K::test_create_superblock() {
-        let total = 1000000;
-        let result = 0;
-        return 0;
+    proc K::test_create_and_validate_superblock() {
+        let sb = create_superblock(16384);
+        let valid = validate_superblock(sb);
+
+        let t1 = expect_u32(valid, SUPERBLOCK_OK);
+        let total = superblock_total_blocks(sb);
+        let t2 = expect_u64(total, 16384);
+        return combine(t1, t2);
     }
 
-    proc K::test_validate_superblock() {
-        let valid = 1;
-        return 0;
+    proc K::test_invalid_superblock() {
+        let invalid_low = validate_superblock(0);
+        let invalid_magic = validate_superblock(create_superblock(16384) + 1);
+
+        let t1 = expect_u32(invalid_low, 0);
+        let t2 = expect_u32(invalid_magic, 0);
+        return combine(t1, t2);
+    }
+
+    proc K::test_required_slots() {
+        let ok = validate_required_slots(kernel_slot_lba(), preload_slot_lba());
+        let bad = validate_required_slots(preload_slot_lba(), kernel_slot_lba());
+
+        let t1 = expect_u32(ok, SUPERBLOCK_OK);
+        let t2 = expect_u32(bad, 0);
+        return combine(t1, t2);
+    }
+
+    proc K::run_all_tests() {
+        let t1 = test_constants();
+        let t2 = combine(t1, test_create_and_validate_superblock());
+        let t3 = combine(t2, test_invalid_superblock());
+        return combine(t3, test_required_slots());
     }
 }

@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Dust LLC, and Contributors
 // Description:
 //   XDVFS Superblock
+//   Finalized superblock semantics and required layout contracts.
 
 forge XdvFsSuperblock {
 
@@ -13,27 +14,146 @@ forge XdvFsSuperblock {
 
     const SUPERBLOCK_OK: UInt32 = 1;
     const SUPERBLOCK_INVALID: UInt32 = 0;
+
     const MIN_FILESYSTEM_BLOCKS: UInt64 = 2048;
+    const MAX_FILESYSTEM_BLOCKS: UInt64 = 16777216;
+
     const SUPERBLOCK_BASE: UInt64 = 1048576;
     const MAGIC_U64: UInt64 = 1479858246;
+
+    const SUPERBLOCK_MAGIC_FACTOR: UInt64 = 10000000000;
+    const SUPERBLOCK_TOTAL_FACTOR: UInt64 = 100000;
+    const SUPERBLOCK_BLOCK_FACTOR: UInt64 = 16;
+
+    const XDVFS_SUPERBLOCK_LBA: UInt64 = 8;
+    const XDVFS_KERNEL_SLOT_LBA: UInt64 = 32;
+    const XDVFS_PRELOAD_SLOT_LBA: UInt64 = 128;
+
+    proc K::superblock_header(total_blocks: UInt64) {
+        return SUPERBLOCK_BASE
+            + (total_blocks * SUPERBLOCK_TOTAL_FACTOR)
+            + (BLOCK_SIZE * SUPERBLOCK_BLOCK_FACTOR)
+            + ROOT_INODE;
+    }
 
     proc K::create_superblock(total_blocks: UInt64) {
         if total_blocks < MIN_FILESYSTEM_BLOCKS {
             return SUPERBLOCK_INVALID;
         } else {
-            return SUPERBLOCK_BASE + total_blocks + MAGIC_U64;
+            if total_blocks > MAX_FILESYSTEM_BLOCKS {
+                return SUPERBLOCK_INVALID;
+            } else {
+                let header = superblock_header(total_blocks);
+                return (header * SUPERBLOCK_MAGIC_FACTOR) + MAGIC_U64;
+            }
+        }
+    }
+
+    proc K::superblock_magic(sb: UInt64) {
+        if sb == 0 {
+            return 0;
+        } else {
+            let header = sb / SUPERBLOCK_MAGIC_FACTOR;
+            return sb - (header * SUPERBLOCK_MAGIC_FACTOR);
+        }
+    }
+
+    proc K::superblock_header_value(sb: UInt64) {
+        return sb / SUPERBLOCK_MAGIC_FACTOR;
+    }
+
+    proc K::superblock_total_blocks(sb: UInt64) {
+        if sb == 0 {
+            return 0;
+        } else {
+            let header = superblock_header_value(sb);
+            let metadata = SUPERBLOCK_BASE + (BLOCK_SIZE * SUPERBLOCK_BLOCK_FACTOR) + ROOT_INODE;
+            if header <= metadata {
+                return 0;
+            } else {
+                return (header - metadata) / SUPERBLOCK_TOTAL_FACTOR;
+            }
+        }
+    }
+
+    proc K::superblock_is_aligned(sb: UInt64) {
+        if sb == 0 {
+            return SUPERBLOCK_INVALID;
+        } else {
+            let header = superblock_header_value(sb);
+            let metadata = SUPERBLOCK_BASE + (BLOCK_SIZE * SUPERBLOCK_BLOCK_FACTOR) + ROOT_INODE;
+            if header <= metadata {
+                return SUPERBLOCK_INVALID;
+            } else {
+                let diff = header - metadata;
+                let quotient = diff / SUPERBLOCK_TOTAL_FACTOR;
+                let remainder = diff - (quotient * SUPERBLOCK_TOTAL_FACTOR);
+                if remainder == 0 {
+                    return SUPERBLOCK_OK;
+                } else {
+                    return SUPERBLOCK_INVALID;
+                }
+            }
         }
     }
 
     proc K::validate_superblock(sb: UInt64) {
-        if sb <= SUPERBLOCK_BASE {
+        if sb == 0 {
             return SUPERBLOCK_INVALID;
         } else {
-            if sb <= MAGIC_U64 {
-                return SUPERBLOCK_INVALID;
+            let magic = superblock_magic(sb);
+            if magic == MAGIC_U64 {
+                let total = superblock_total_blocks(sb);
+                if total < MIN_FILESYSTEM_BLOCKS {
+                    return SUPERBLOCK_INVALID;
+                } else {
+                    if total > MAX_FILESYSTEM_BLOCKS {
+                        return SUPERBLOCK_INVALID;
+                    } else {
+                        let aligned = superblock_is_aligned(sb);
+                        if aligned == SUPERBLOCK_OK {
+                            let expected = create_superblock(total);
+                            if expected == sb {
+                                return SUPERBLOCK_OK;
+                            } else {
+                                return SUPERBLOCK_INVALID;
+                            }
+                        } else {
+                            return SUPERBLOCK_INVALID;
+                        }
+                    }
+                }
             } else {
-                return SUPERBLOCK_OK;
+                return SUPERBLOCK_INVALID;
             }
+        }
+    }
+
+    proc K::superblock_lba() {
+        return XDVFS_SUPERBLOCK_LBA;
+    }
+
+    proc K::kernel_slot_lba() {
+        return XDVFS_KERNEL_SLOT_LBA;
+    }
+
+    proc K::preload_slot_lba() {
+        return XDVFS_PRELOAD_SLOT_LBA;
+    }
+
+    proc K::validate_required_slots(kernel_lba: UInt64, preload_lba: UInt64) {
+        if kernel_lba == XDVFS_KERNEL_SLOT_LBA {
+            if preload_lba == XDVFS_PRELOAD_SLOT_LBA {
+                if preload_lba > kernel_lba {
+                    return SUPERBLOCK_OK;
+                } else {
+                    return SUPERBLOCK_INVALID;
+                }
+            } else {
+                return SUPERBLOCK_INVALID;
+            }
+        } else {
+            return SUPERBLOCK_INVALID;
         }
     }
 }

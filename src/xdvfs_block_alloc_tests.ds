@@ -5,30 +5,109 @@
 
 forge XdvFsBlockAllocTests {
 
+    const TEST_PASS: UInt32 = 0;
+    const TEST_FAIL: UInt32 = 1;
+
+    const BLOCK_FREE_OK: UInt32 = 0;
+    const BLOCK_FREE_FAIL: UInt32 = 1;
+
+    proc K::expect_u32(actual: UInt32, expected: UInt32) {
+        if actual == expected {
+            return TEST_PASS;
+        } else {
+            return TEST_FAIL;
+        }
+    }
+
+    proc K::expect_u64(actual: UInt64, expected: UInt64) {
+        if actual == expected {
+            return TEST_PASS;
+        } else {
+            return TEST_FAIL;
+        }
+    }
+
+    proc K::combine(lhs: UInt32, rhs: UInt32) {
+        if lhs == TEST_PASS {
+            return rhs;
+        } else {
+            return TEST_FAIL;
+        }
+    }
+
     proc K::test_domain_constants() {
-        let k_domain = 0;
-        let q_domain = 1;
-        let phi_domain = 2;
-        return 0;
+        let t1 = expect_u64(domain_base(0), 2048);
+        let t2 = expect_u64(domain_base(1), 1048576);
+        let t3 = expect_u64(domain_base(2), 2097152);
+        let t4 = expect_u64(domain_reserve_blocks(0), 256);
+        let t5 = expect_u64(domain_reserve_blocks(1), 512);
+        let t6 = expect_u64(domain_reserve_blocks(2), 512);
+
+        let u1 = combine(t1, t2);
+        let u2 = combine(u1, t3);
+        let u3 = combine(u2, t4);
+        let u4 = combine(u3, t5);
+        return combine(u4, t6);
     }
 
-    proc K::test_init_allocator() {
-        let total = 1000000;
-        return 0;
+    proc K::test_allocator_init_and_windows() {
+        let allocator_state = init_allocator(16384);
+        let k = get_free_block_count(allocator_state, 0);
+        let q = get_free_block_count(allocator_state, 1);
+        let phi = get_free_block_count(allocator_state, 2);
+
+        let t1 = expect_u64(allocator_state, 15360);
+        let t2 = expect_u64(k, 15104);
+        let t3 = expect_u64(q, 14848);
+        let t4 = expect_u64(phi, 14848);
+
+        let u1 = combine(t1, t2);
+        let u2 = combine(u1, t3);
+        return combine(u2, t4);
     }
 
-    proc K::test_allocate_block() {
-        let block_num = 1;
-        return 0;
+    proc K::test_allocate_and_free_ranges() {
+        let allocator_state = init_allocator(16384);
+        let block = allocate_block(allocator_state, 0);
+        let first = allocator_first_block(0);
+        let last = allocator_last_block(allocator_state, 0);
+
+        let free_ok = free_block(allocator_state, block, 0);
+        let free_bad_low = free_block(allocator_state, first - 1, 0);
+        let free_bad_high = free_block(allocator_state, last + 1, 0);
+
+        let in_range = 0;
+        if block < first {
+            return TEST_FAIL;
+        } else {
+            if block > last {
+                return TEST_FAIL;
+            } else {
+                let t1 = expect_u32(free_ok, BLOCK_FREE_OK);
+                let t2 = expect_u32(free_bad_low, BLOCK_FREE_FAIL);
+                let t3 = expect_u32(free_bad_high, BLOCK_FREE_FAIL);
+                let u1 = combine(t1, t2);
+                return combine(u1, t3);
+            }
+        }
     }
 
-    proc K::test_free_block() {
-        let result = 0;
-        return 0;
+    proc K::test_allocator_contract() {
+        let allocator_state = init_allocator(16384);
+        let ok = validate_allocator_contract(allocator_state);
+        let bad = validate_allocator_contract(0);
+
+        let t1 = expect_u32(ok, BLOCK_FREE_OK);
+        let t2 = expect_u32(bad, BLOCK_FREE_FAIL);
+        return combine(t1, t2);
     }
 
-    proc K::test_get_free_block_count() {
-        let count = 999000;
-        return 0;
+    proc K::run_all_tests() {
+        let t1 = test_domain_constants();
+        let t2 = combine(t1, test_allocator_init_and_windows());
+        let t3 = combine(t2, test_allocate_and_free_ranges());
+        return combine(t3, test_allocator_contract());
     }
 }
+
+

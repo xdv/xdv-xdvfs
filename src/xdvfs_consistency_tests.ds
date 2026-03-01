@@ -1,0 +1,96 @@
+// File: xdvfs_consistency_tests.ds - This file is part of XDV
+// Copyright (c) 2026 Dust LLC, and Contributors
+// Description:
+//   XDVFS fsck-format-mount consistency and required path contract tests.
+
+forge XdvFsConsistencyTests {
+
+    const TEST_PASS: UInt32 = 0;
+    const TEST_FAIL: UInt32 = 1;
+
+    const OK: UInt32 = 0;
+
+    proc K::expect_u32(actual: UInt32, expected: UInt32) {
+        if actual == expected {
+            return TEST_PASS;
+        } else {
+            return TEST_FAIL;
+        }
+    }
+
+    proc K::expect_u64(actual: UInt64, expected: UInt64) {
+        if actual == expected {
+            return TEST_PASS;
+        } else {
+            return TEST_FAIL;
+        }
+    }
+
+    proc K::combine(lhs: UInt32, rhs: UInt32) {
+        if lhs == TEST_PASS {
+            return rhs;
+        } else {
+            return TEST_FAIL;
+        }
+    }
+
+    proc K::test_required_paths_enforced() {
+        let ok = validate_required_paths(required_kernel_path_marker(), required_preload_path_marker());
+        let bad_kernel = validate_required_paths(0, required_preload_path_marker());
+        let bad_preload = validate_required_paths(required_kernel_path_marker(), 0);
+
+        let t1 = expect_u32(ok, OK);
+        let t2 = expect_u32(bad_kernel, 1);
+        let t3 = expect_u32(bad_preload, 1);
+
+        let u1 = combine(t1, t2);
+        return combine(u1, t3);
+    }
+
+    proc K::test_layout_and_slot_contracts() {
+        let layout = validate_layout_semantics(16384);
+        let slots = validate_required_slots(kernel_slot_lba(), preload_slot_lba());
+
+        let t1 = expect_u32(layout, OK);
+        let t2 = expect_u32(slots, 1);
+        return combine(t1, t2);
+    }
+
+    proc K::test_format_fsck_mount_chain() {
+        let formatted = format_filesystem("xdv0");
+        let checked = check_filesystem("xdv0");
+        let mounted = mount("xdv0", "/", "xdvfs", 0);
+
+        let t1 = expect_u32(formatted, OK);
+        let t2 = expect_u32(checked, OK);
+        let t3 = expect_u32(mounted, OK);
+
+        let u1 = combine(t1, t2);
+        return combine(u1, t3);
+    }
+
+    proc K::test_superblock_allocator_inode_consistency() {
+        let sb = create_superblock(16384);
+        let sb_valid = validate_superblock(sb);
+        let total = superblock_total_blocks(sb);
+
+        let allocator_state = init_allocator(total);
+        let alloc_valid = validate_allocator_contract(allocator_state);
+        let inode_valid = validate_required_path_inodes(3, 4, 5);
+
+        let t1 = expect_u32(sb_valid, 1);
+        let t2 = expect_u32(alloc_valid, 0);
+        let t3 = expect_u32(inode_valid, 0);
+
+        let u1 = combine(t1, t2);
+        return combine(u1, t3);
+    }
+
+    proc K::run_all_tests() {
+        let t1 = test_required_paths_enforced();
+        let t2 = combine(t1, test_layout_and_slot_contracts());
+        let t3 = combine(t2, test_format_fsck_mount_chain());
+        return combine(t3, test_superblock_allocator_inode_consistency());
+    }
+}
+

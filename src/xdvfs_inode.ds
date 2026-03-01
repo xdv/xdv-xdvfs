@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Dust LLC, and Contributors
 // Description:
 //   XDVFS Inode Management
+//   Finalized inode lifecycle and required-system-inode constraints.
 
 forge XdvFsInode {
 
@@ -13,9 +14,18 @@ forge XdvFsInode {
     const FIRST_DYNAMIC_INODE: UInt64 = 16;
     const MAX_INODE_NUMBER: UInt64 = 1048576;
 
+    const INODE_CONSOLE_DIR: UInt64 = 3;
+    const INODE_KERNEL_BIN: UInt64 = 4;
+    const INODE_PRELOAD_MANIFEST: UInt64 = 5;
+
     const INODE_OK: UInt32 = 0;
     const INODE_FAIL: UInt32 = 1;
     const INODE_INVALID: UInt64 = 0;
+
+    const INODE_RECORD_FACTOR_A: UInt64 = 1000000000000;
+    const INODE_RECORD_FACTOR_B: UInt64 = 10000000000;
+    const INODE_RECORD_FACTOR_C: UInt64 = 1000000;
+    const INODE_RECORD_FACTOR_D: UInt64 = 1000;
 
     proc K::is_valid_inode(inode_num: UInt64) {
         if inode_num < ROOT_INODE {
@@ -29,8 +39,91 @@ forge XdvFsInode {
         }
     }
 
+    proc K::is_reserved_inode(inode_num: UInt64) {
+        if inode_num < FIRST_DYNAMIC_INODE {
+            return INODE_OK;
+        } else {
+            return INODE_FAIL;
+        }
+    }
+
+    proc K::is_required_system_inode(inode_num: UInt64) {
+        if inode_num == ROOT_INODE {
+            return INODE_OK;
+        } else {
+            if inode_num == INODE_CONSOLE_DIR {
+                return INODE_OK;
+            } else {
+                if inode_num == INODE_KERNEL_BIN {
+                    return INODE_OK;
+                } else {
+                    if inode_num == INODE_PRELOAD_MANIFEST {
+                        return INODE_OK;
+                    } else {
+                        return INODE_FAIL;
+                    }
+                }
+            }
+        }
+    }
+
+    proc K::is_valid_inode_type(inode_type: UInt16) {
+        if inode_type == TYPE_REGULAR {
+            return INODE_OK;
+        } else {
+            if inode_type == TYPE_DIRECTORY {
+                return INODE_OK;
+            } else {
+                if inode_type == TYPE_SYMLINK {
+                    return INODE_OK;
+                } else {
+                    return INODE_FAIL;
+                }
+            }
+        }
+    }
+
     proc K::allocate_inode() {
         return FIRST_DYNAMIC_INODE;
+    }
+
+    proc K::allocate_inode_after(previous_inode: UInt64) {
+        if previous_inode < FIRST_DYNAMIC_INODE {
+            return FIRST_DYNAMIC_INODE;
+        } else {
+            let next = previous_inode + 1;
+            if next > MAX_INODE_NUMBER {
+                return INODE_INVALID;
+            } else {
+                return next;
+            }
+        }
+    }
+
+    proc K::inode_pack_record(inode_num: UInt64, inode_type: UInt16, perms: UInt16, first_block: UInt64, size_bytes: UInt32) {
+        let inode_valid = is_valid_inode(inode_num);
+        if inode_valid == INODE_OK {
+            let type_valid = is_valid_inode_type(inode_type);
+            if type_valid == INODE_OK {
+                if perms == 0 {
+                    return INODE_INVALID;
+                } else {
+                    if first_block == 0 {
+                        return INODE_INVALID;
+                    } else {
+                        return (inode_num * INODE_RECORD_FACTOR_A)
+                            + (inode_type * INODE_RECORD_FACTOR_B)
+                            + (perms * INODE_RECORD_FACTOR_C)
+                            + (first_block * INODE_RECORD_FACTOR_D)
+                            + size_bytes;
+                    }
+                }
+            } else {
+                return INODE_INVALID;
+            }
+        } else {
+            return INODE_INVALID;
+        }
     }
 
     proc K::get_inode(inode_num: UInt64) {
@@ -54,14 +147,32 @@ forge XdvFsInode {
     proc K::free_inode(inode_num: UInt64) {
         let valid = is_valid_inode(inode_num);
         if valid == INODE_OK {
-            if inode_num == ROOT_INODE {
+            let required = is_required_system_inode(inode_num);
+            if required == INODE_OK {
                 return INODE_FAIL;
             } else {
-                if inode_num < FIRST_DYNAMIC_INODE {
+                let reserved = is_reserved_inode(inode_num);
+                if reserved == INODE_OK {
                     return INODE_FAIL;
                 } else {
                     return INODE_OK;
                 }
+            }
+        } else {
+            return INODE_FAIL;
+        }
+    }
+
+    proc K::validate_required_path_inodes(console_inode: UInt64, kernel_inode: UInt64, preload_inode: UInt64) {
+        if console_inode == INODE_CONSOLE_DIR {
+            if kernel_inode == INODE_KERNEL_BIN {
+                if preload_inode == INODE_PRELOAD_MANIFEST {
+                    return INODE_OK;
+                } else {
+                    return INODE_FAIL;
+                }
+            } else {
+                return INODE_FAIL;
             }
         } else {
             return INODE_FAIL;

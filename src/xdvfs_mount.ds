@@ -64,35 +64,77 @@ forge XdvFsMount {
         }
     }
 
+    proc K::validate_required_paths_contract() {
+        let path_ok = validate_required_paths(required_kernel_path_marker(), required_preload_path_marker());
+        if path_ok == MOUNT_OK {
+            return MOUNT_OK;
+        } else {
+            return MOUNT_FAIL;
+        }
+    }
+
+    proc K::validate_allocator_and_inode_contract() {
+        let allocator_state = init_allocator(DEFAULT_TOTAL_BLOCKS);
+        let alloc_ok = validate_allocator_contract(allocator_state);
+        if alloc_ok == 0 {
+            let inode_ok = validate_required_path_inodes(3, 4, 5);
+            if inode_ok == 0 {
+                return MOUNT_OK;
+            } else {
+                return MOUNT_FAIL;
+            }
+        } else {
+            return MOUNT_FAIL;
+        }
+    }
+
+    proc K::validate_superblock_contract() {
+        let sb = create_superblock(DEFAULT_TOTAL_BLOCKS);
+        let valid = validate_superblock(sb);
+        if valid == SUPERBLOCK_OK {
+            let slots = validate_required_slots(kernel_slot_lba(), preload_slot_lba());
+            if slots == SUPERBLOCK_OK {
+                return MOUNT_OK;
+            } else {
+                return MOUNT_FAIL;
+            }
+        } else {
+            return MOUNT_FAIL;
+        }
+    }
+
     proc K::mount(device: Str, mount_point: Str, fs_type: Str, flags: UInt32) {
         emit "xdvfs: mount request accepted";
 
         let flags_ok = is_supported_mount_flags(flags);
         if flags_ok == MOUNT_OK {
-            let probed = probe_standard_storage();
-            if probed == INVALID_RESULT {
-                return MOUNT_FAIL;
-            } else {
-                let partition_style = detect_partition_table(DEFAULT_DEVICE_HANDLE);
-                if partition_style == INVALID_RESULT {
+            let path_ok = validate_required_paths_contract();
+            if path_ok == MOUNT_OK {
+                let probed = probe_standard_storage();
+                if probed == INVALID_RESULT {
                     return MOUNT_FAIL;
                 } else {
-                    let partition_count = enumerate_partitions(DEFAULT_DEVICE_HANDLE);
-                    if partition_count == INVALID_RESULT {
+                    let partition_style = detect_partition_table(DEFAULT_DEVICE_HANDLE);
+                    if partition_style == INVALID_RESULT {
                         return MOUNT_FAIL;
                     } else {
-                        let boot_partition = get_boot_partition(DEFAULT_DEVICE_HANDLE);
-                        if boot_partition == INVALID_RESULT {
+                        let partition_count = enumerate_partitions(DEFAULT_DEVICE_HANDLE);
+                        if partition_count == INVALID_RESULT {
                             return MOUNT_FAIL;
                         } else {
-                            let sb = create_superblock(DEFAULT_TOTAL_BLOCKS);
-                            if sb == INVALID_RESULT {
+                            let boot_partition = get_boot_partition(DEFAULT_DEVICE_HANDLE);
+                            if boot_partition == INVALID_RESULT {
                                 return MOUNT_FAIL;
                             } else {
-                                let valid = validate_superblock(sb);
-                                if valid == SUPERBLOCK_OK {
-                                    emit "xdvfs: filesystem mounted";
-                                    return MOUNT_OK;
+                                let sb_ok = validate_superblock_contract();
+                                if sb_ok == MOUNT_OK {
+                                    let alloc_inode_ok = validate_allocator_and_inode_contract();
+                                    if alloc_inode_ok == MOUNT_OK {
+                                        emit "xdvfs: filesystem mounted";
+                                        return MOUNT_OK;
+                                    } else {
+                                        return MOUNT_FAIL;
+                                    }
                                 } else {
                                     return MOUNT_FAIL;
                                 }
@@ -100,6 +142,8 @@ forge XdvFsMount {
                         }
                     }
                 }
+            } else {
+                return MOUNT_FAIL;
             }
         } else {
             return MOUNT_FAIL;
@@ -121,10 +165,15 @@ forge XdvFsMount {
         emit "xdvfs: remount request accepted";
         let flags_ok = is_supported_mount_flags(flags);
         if flags_ok == MOUNT_OK {
-            let sync_status = sync_filesystem(DEFAULT_DEVICE_HANDLE);
-            if sync_status == MOUNT_OK {
-                emit "xdvfs: remount complete";
-                return MOUNT_OK;
+            let path_ok = validate_required_paths_contract();
+            if path_ok == MOUNT_OK {
+                let sync_status = sync_filesystem(DEFAULT_DEVICE_HANDLE);
+                if sync_status == MOUNT_OK {
+                    emit "xdvfs: remount complete";
+                    return MOUNT_OK;
+                } else {
+                    return MOUNT_FAIL;
+                }
             } else {
                 return MOUNT_FAIL;
             }
@@ -145,43 +194,21 @@ forge XdvFsMount {
 
     proc K::check_filesystem(device: Str) {
         emit "xdvfs: fsck preflight";
-        let probed = probe_standard_storage();
-        if probed == INVALID_RESULT {
-            return MOUNT_FAIL;
-        } else {
-            let partition_style = detect_partition_table(DEFAULT_DEVICE_HANDLE);
-            if partition_style == INVALID_RESULT {
+        let path_ok = validate_required_paths_contract();
+        if path_ok == MOUNT_OK {
+            let probed = probe_standard_storage();
+            if probed == INVALID_RESULT {
                 return MOUNT_FAIL;
             } else {
-                let sb = create_superblock(DEFAULT_TOTAL_BLOCKS);
-                let valid = validate_superblock(sb);
-                if valid == SUPERBLOCK_OK {
-                    emit "xdvfs: fsck clean";
-                    return MOUNT_OK;
-                } else {
+                let partition_style = detect_partition_table(DEFAULT_DEVICE_HANDLE);
+                if partition_style == INVALID_RESULT {
                     return MOUNT_FAIL;
-                }
-            }
-        }
-    }
-
-    proc K::format_filesystem(device: Str) {
-        emit "xdvfs: format request accepted";
-        let probed = probe_standard_storage();
-        if probed == INVALID_RESULT {
-            return MOUNT_FAIL;
-        } else {
-            let partition_style = detect_partition_table(DEFAULT_DEVICE_HANDLE);
-            if partition_style == INVALID_RESULT {
-                return MOUNT_FAIL;
-            } else {
-                let prep = prepare_format_context(DEFAULT_DEVICE_HANDLE, DEFAULT_BLOCK_SIZE, DEFAULT_INODE_SIZE);
-                if prep == MOUNT_OK {
-                    let formatted = format_xdvfs(DEFAULT_DEVICE_HANDLE, DEFAULT_BLOCK_SIZE, DEFAULT_INODE_SIZE);
-                    if formatted == MOUNT_OK {
-                        let finalized = finalize_format(DEFAULT_DEVICE_HANDLE);
-                        if finalized == MOUNT_OK {
-                            emit "xdvfs: format complete";
+                } else {
+                    let sb_ok = validate_superblock_contract();
+                    if sb_ok == MOUNT_OK {
+                        let alloc_inode_ok = validate_allocator_and_inode_contract();
+                        if alloc_inode_ok == MOUNT_OK {
+                            emit "xdvfs: fsck clean";
                             return MOUNT_OK;
                         } else {
                             return MOUNT_FAIL;
@@ -189,10 +216,70 @@ forge XdvFsMount {
                     } else {
                         return MOUNT_FAIL;
                     }
+                }
+            }
+        } else {
+            return MOUNT_FAIL;
+        }
+    }
+
+    proc K::format_filesystem(device: Str) {
+        emit "xdvfs: format request accepted";
+        let path_ok = validate_required_paths_contract();
+        if path_ok == MOUNT_OK {
+            let probed = probe_standard_storage();
+            if probed == INVALID_RESULT {
+                return MOUNT_FAIL;
+            } else {
+                let partition_style = detect_partition_table(DEFAULT_DEVICE_HANDLE);
+                if partition_style == INVALID_RESULT {
+                    return MOUNT_FAIL;
+                } else {
+                    let prep = prepare_format_context(DEFAULT_DEVICE_HANDLE, DEFAULT_BLOCK_SIZE, DEFAULT_INODE_SIZE);
+                    if prep == MOUNT_OK {
+                        let formatted = format_xdvfs(DEFAULT_DEVICE_HANDLE, DEFAULT_BLOCK_SIZE, DEFAULT_INODE_SIZE);
+                        if formatted == MOUNT_OK {
+                            let finalized = finalize_format(DEFAULT_DEVICE_HANDLE);
+                            if finalized == MOUNT_OK {
+                                let fsck = check_filesystem(device);
+                                if fsck == MOUNT_OK {
+                                    emit "xdvfs: format complete";
+                                    return MOUNT_OK;
+                                } else {
+                                    return MOUNT_FAIL;
+                                }
+                            } else {
+                                return MOUNT_FAIL;
+                            }
+                        } else {
+                            return MOUNT_FAIL;
+                        }
+                    } else {
+                        return MOUNT_FAIL;
+                    }
+                }
+            }
+        } else {
+            return MOUNT_FAIL;
+        }
+    }
+
+    proc K::fsck_format_mount_consistency(device: Str, mount_point: Str, fs_type: Str, flags: UInt32) {
+        let formatted = format_filesystem(device);
+        if formatted == MOUNT_OK {
+            let checked = check_filesystem(device);
+            if checked == MOUNT_OK {
+                let mounted = mount(device, mount_point, fs_type, flags);
+                if mounted == MOUNT_OK {
+                    return MOUNT_OK;
                 } else {
                     return MOUNT_FAIL;
                 }
+            } else {
+                return MOUNT_FAIL;
             }
+        } else {
+            return MOUNT_FAIL;
         }
     }
 
@@ -205,3 +292,4 @@ forge XdvFsMount {
         }
     }
 }
+
